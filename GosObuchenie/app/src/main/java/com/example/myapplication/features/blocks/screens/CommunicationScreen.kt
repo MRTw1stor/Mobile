@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.myapplication.features.blocks.presentation.CatalogBaseScreen
+import com.example.myapplication.features.blocks.presentation.AdaptiveSectionTabs
 import androidx.compose.runtime.*
 import androidx.compose.ui.draw.clip
 import com.example.myapplication.features.blocks.info.CommunicationHamburger
@@ -21,20 +22,11 @@ fun CommunicationScreen(navController: NavController) {
     val tabs = listOf("Теория 🗣", "Слушание 🧠", "Гамбургер 🍔")
 
     CatalogBaseScreen(title = "Коммуникация", navController = navController) {
-        ScrollableTabRow(
+        AdaptiveSectionTabs(
+            tabs = tabs,
             selectedTabIndex = selectedTab,
-            edgePadding = 0.dp,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title, fontWeight = FontWeight.Bold) }
-                )
-            }
-        }
+            onTabSelected = { selectedTab = it }
+        )
         Spacer(modifier = Modifier.height(12.dp))
         when (selectedTab) {
             0 -> CommunicationTheory()

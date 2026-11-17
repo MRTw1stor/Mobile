@@ -28,9 +28,23 @@ class CalendarRepositoryImpl(context: Context) : CalendarRepository {
     override suspend fun addEventForDate(dateKey: String, eventText: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val currentEvents = getEventsForDate(dateKey).toMutableList()
-            if (currentEvents.size >= 3) return@withContext false
-
+            // No per-day task limit: users can add as many tasks as they need.
             currentEvents.add(eventText)
+            PreferenceManager.getPrefs(appContext).edit()
+                .putString("calendar_events_$dateKey", JSONArray(currentEvents).toString())
+                .apply()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun updateEventForDate(dateKey: String, index: Int, eventText: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val currentEvents = getEventsForDate(dateKey).toMutableList()
+            if (index !in currentEvents.indices) return@withContext false
+            currentEvents[index] = eventText
             PreferenceManager.getPrefs(appContext).edit()
                 .putString("calendar_events_$dateKey", JSONArray(currentEvents).toString())
                 .apply()

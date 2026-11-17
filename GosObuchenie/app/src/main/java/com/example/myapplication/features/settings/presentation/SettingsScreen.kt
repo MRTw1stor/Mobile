@@ -85,56 +85,64 @@ fun SettingsScreen(
         },
         modifier = Modifier.statusBarsPadding()
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            EditableAvatar(
-                avatarBitmap = state.avatarBitmap,
-                isLoading = state.isLoadingAvatar,
-                onClick = {
-                    documentLauncher.launch(arrayOf("image/*"))
-                }
-            )
-
-            Text(
-                text = "Нажмите, чтобы изменить фото",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
-            )
-
-            HorizontalDivider()
-
-            Text(
-                text = "Тема оформления системы",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+            Column(
                 modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(vertical = 16.dp)
-            )
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-            ThemeOptionRow(
-                label = "Системная тема",
-                isSelected = (state.currentTheme == "system"),
-                onClick = { viewModel.updateTheme("system") }
-            )
-            ThemeOptionRow(
-                label = "Светлая тема",
-                isSelected = (state.currentTheme == "light"),
-                onClick = { viewModel.updateTheme("light") }
-            )
-            ThemeOptionRow(
-                label = "Тёмная тема",
-                isSelected = (state.currentTheme == "dark"),
-                onClick = { viewModel.updateTheme("dark") }
-            )
+                EditableAvatar(
+                    avatarBitmap = state.avatarBitmap,
+                    isLoading = state.isLoadingAvatar,
+                    onClick = {
+                        documentLauncher.launch(arrayOf("image/*"))
+                    }
+                )
+
+                Text(
+                    text = "Нажмите, чтобы изменить фото",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 32.dp)
+                )
+
+                HorizontalDivider()
+
+                Text(
+                    text = "Тема оформления системы",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(vertical = 16.dp)
+                )
+
+                ThemeOptionRow(
+                    label = "Системная тема",
+                    isSelected = (state.currentTheme == "system"),
+                    onClick = { viewModel.updateTheme("system") }
+                )
+                ThemeOptionRow(
+                    label = "Светлая тема",
+                    isSelected = (state.currentTheme == "light"),
+                    onClick = { viewModel.updateTheme("light") }
+                )
+                ThemeOptionRow(
+                    label = "Тёмная тема",
+                    isSelected = (state.currentTheme == "dark"),
+                    onClick = { viewModel.updateTheme("dark") }
+                )
+            }
         }
     }
 }

@@ -71,7 +71,7 @@ fun ControlQuestionsScreen(navController: NavController) {
             title = "5. Содержание ответа и право вето контролера",
             color = Color(0xFF00A652)
         ) {
-                Text("Суть: ответы на запросы должны сдержать информацию по каждому заданному вопросу:", style = MaterialTheme.typography.bodyMedium)
+                Text("Суть: ответы на запросы должны содержать информацию по каждому заданному вопросу:", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Если информацию требуется представить по форме, то информация предоставляется строго по форме, оставления пустых граф в таблицах не допускается.", style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(4.dp))

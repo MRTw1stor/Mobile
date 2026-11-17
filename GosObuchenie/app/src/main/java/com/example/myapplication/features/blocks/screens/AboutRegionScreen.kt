@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.example.myapplication.features.blocks.presentation.CatalogBaseScreen
+import com.example.myapplication.features.blocks.presentation.AdaptiveSectionTabs
 import com.example.myapplication.features.blocks.info.RegionStatistik
 import com.example.myapplication.features.blocks.info.RegionPeople
 import com.example.myapplication.features.blocks.info.RegionHistory
@@ -25,20 +26,11 @@ fun AboutRegionScreen(navController: NavController) {
 
     CatalogBaseScreen(title = "Информация о регионе", navController = navController) {
 
-        ScrollableTabRow(
+        AdaptiveSectionTabs(
+            tabs = tabs,
             selectedTabIndex = selectedTab,
-            edgePadding = 0.dp,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title, fontWeight = FontWeight.Bold) }
-                )
-            }
-        }
+            onTabSelected = { selectedTab = it }
+        )
 
         Spacer(modifier = Modifier.height(12.dp))
 

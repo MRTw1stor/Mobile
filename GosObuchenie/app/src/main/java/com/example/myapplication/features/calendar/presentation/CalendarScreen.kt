@@ -52,6 +52,9 @@ fun CalendarScreen(
                 onDeleteEvent = { index ->
                     viewModel.deleteEvent(index)
                 },
+                onUpdateEvent = { index, text, onResult ->
+                    viewModel.updateEvent(index, text, onResult)
+                },
                 modifier = Modifier.weight(1f)
             )
         }

@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -69,7 +70,17 @@ fun CalendarGrid(
         selectedDate.format(formatter).uppercase()
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    // Keep the calendar at a comfortable maximum width on wide phones and foldables.
+    // On narrow phones it still uses the full available width.
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+      Column(
+          modifier = Modifier
+              .widthIn(max = 480.dp)
+              .fillMaxWidth()
+      ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -145,7 +156,7 @@ fun CalendarGrid(
                 .wrapContentHeight()
         ) {
             items(emptySpacesBeforeFirstDay) {
-                Spacer(modifier = Modifier.aspectRatio(1.2f))
+                Spacer(modifier = Modifier.fillMaxWidth().height(44.dp))
             }
 
             items(daysInMonth) { index ->
@@ -157,11 +168,8 @@ fun CalendarGrid(
 
                 Box(
                     modifier = Modifier
-                        .aspectRatio(1.2f)
-                        .padding(2.dp)
-                        .clip(CircleShape)
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .then(if (isRealToday) Modifier.border(2.dp, MaterialTheme.colorScheme.error, CircleShape) else Modifier)
+                        .fillMaxWidth()
+                        .height(44.dp)
                         .clickable {
                             if (isPastDay) {
                                 Toast.makeText(context, "Нельзя выбирать прошедшие даты!", Toast.LENGTH_SHORT).show()
@@ -171,21 +179,39 @@ fun CalendarGrid(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = dayNumber.toString(),
-                        fontSize = 15.sp, // Чуть-чуть уменьшили шрифт для компактности
-                        fontWeight = if (isRealToday) FontWeight.Bold else FontWeight.Normal,
-                        color = when {
-                            isSelected -> MaterialTheme.colorScheme.onPrimary
-                            isPastDay -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                            isRealToday -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.onSurface
-                        }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .then(if (isRealToday) Modifier.border(2.dp, MaterialTheme.colorScheme.error, CircleShape) else Modifier),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = dayNumber.toString(),
+                            fontSize = 15.sp,
+                            fontWeight = if (isRealToday) FontWeight.Bold else FontWeight.Normal,
+                            color = when {
+                                isSelected -> MaterialTheme.colorScheme.onPrimary
+                                isPastDay -> MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                                isRealToday -> MaterialTheme.colorScheme.error
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
                 }
             }
         }
+      }
     }
+}
+
+private fun taskTimeInMinutes(task: String): Int? {
+    val match = Regex("""(?<!\d)([01]\d|2[0-3]):([0-5]\d)(?!\d)""").find(task)
+        ?: return null
+    val hour = match.groupValues[1].toInt()
+    val minute = match.groupValues[2].toInt()
+    return hour * 60 + minute
 }
 
 @Composable
@@ -193,40 +219,74 @@ fun EventListView(
     eventsList: List<String>,
     onAddEvent: (String, (Boolean) -> Unit) -> Unit,
     onDeleteEvent: (Int) -> Unit,
+    onUpdateEvent: (Int, String, (Boolean) -> Unit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) }
-    var newEventText by remember { mutableStateOf("") }
+    var editingEventIndex by remember { mutableStateOf<Int?>(null) }
+    var eventText by remember { mutableStateOf("") }
     var eventTime by remember { mutableStateOf("") }
-    val calendar = Calendar.getInstance()
-    val hour = calendar.get(Calendar.HOUR_OF_DAY)
-    val minute = calendar.get(Calendar.MINUTE)
-    val timePickerDialog = TimePickerDialog(
-        context,
-        { _, selectedHour, selectedMinute ->
-            eventTime = String.format("%02d:%02d", selectedHour, selectedMinute)
-        },
-        hour,
-        minute,
-        true
-    )
+
+    fun resetEditor() {
+        showDialog = false
+        editingEventIndex = null
+        eventText = ""
+        eventTime = ""
+    }
+
+    fun openTimePicker() {
+        val now = Calendar.getInstance()
+        val initialHour = eventTime.substringBefore(":").toIntOrNull()
+            ?: now.get(Calendar.HOUR_OF_DAY)
+        val initialMinute = eventTime.substringAfter(":").toIntOrNull()
+            ?: now.get(Calendar.MINUTE)
+        TimePickerDialog(
+            context,
+            { _, selectedHour, selectedMinute ->
+                eventTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute)
+            },
+            initialHour,
+            initialMinute,
+            true
+        ).show()
+    }
+
+    fun openEditor(index: Int?, event: String? = null) {
+        editingEventIndex = index
+        if (event == null) {
+            eventText = ""
+            eventTime = ""
+        } else {
+            val match = Regex("""^\s*(?:⏱️?\s*)?(\d{2}:\d{2})\s*[—-]\s*(.*)$""").matchEntire(event)
+            if (match != null) {
+                eventTime = match.groupValues[1]
+                eventText = match.groupValues[2]
+            } else {
+                eventTime = ""
+                eventText = event
+            }
+        }
+        showDialog = true
+    }
 
     if (showDialog) {
+        val isEditing = editingEventIndex != null
         AlertDialog(
-            onDismissRequest = {
-                showDialog = false
-                newEventText = ""
-                eventTime = ""
+            onDismissRequest = { resetEditor() },
+            title = {
+                Text(
+                    if (isEditing) "Редактировать задачу" else "Новая задача",
+                    fontWeight = FontWeight.Bold
+                )
             },
-            title = { Text("Новая задача", fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { timePickerDialog.show() },
+                        onClick = { openTimePicker() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
@@ -234,10 +294,9 @@ fun EventListView(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-
                     OutlinedTextField(
-                        value = newEventText,
-                        onValueChange = { newEventText = it },
+                        value = eventText,
+                        onValueChange = { eventText = it },
                         label = { Text("Что планируете сделать?") },
                         placeholder = { Text("Введите текст задачи") },
                         modifier = Modifier.fillMaxWidth(),
@@ -248,48 +307,49 @@ fun EventListView(
             confirmButton = {
                 Button(
                     onClick = {
-                        val text = newEventText.trim()
-                        if (text.isNotEmpty()) {
+                        val trimmedText = eventText.trim()
+                        if (trimmedText.isNotEmpty()) {
                             val fullTaskText = if (eventTime.isNotBlank()) {
-                                "⏱️ $eventTime — $text"
+                                "⏱️ $eventTime — $trimmedText"
                             } else {
-                                text
+                                trimmedText
                             }
-
-                            onAddEvent(fullTaskText) { success ->
-                                if (success) {
-                                    showDialog = false
-                                    newEventText = ""
-                                    eventTime = ""
-                                } else {
-                                    Toast.makeText(context, "Максимум 3 задачи на один день!", Toast.LENGTH_LONG).show()
-                                }
+                            val callback: (Boolean) -> Unit = { success ->
+                                if (success) resetEditor()
+                                else Toast.makeText(
+                                    context,
+                                    "Не удалось сохранить задачу. Попробуйте ещё раз.",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
+                            val index = editingEventIndex
+                            if (index == null) onAddEvent(fullTaskText, callback)
+                            else onUpdateEvent(index, fullTaskText, callback)
+                        } else {
+                            Toast.makeText(context, "Введите описание задачи", Toast.LENGTH_SHORT).show()
                         }
                     }
                 ) {
-                    Text("Сохранить")
+                    Text(if (isEditing) "Сохранить изменения" else "Сохранить")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDialog = false
-                        newEventText = ""
-                        eventTime = ""
-                    }
-                ) {
-                    Text("Отмена")
-                }
+                TextButton(onClick = { resetEditor() }) { Text("Отмена") }
             }
+        )
+    }
+
+    // Sort tasks chronologically. Keep original indices so edit/delete affect the right stored item.
+    val sortedEvents = remember(eventsList) {
+        eventsList.withIndex().sortedWith(
+            compareBy<IndexedValue<String>> { taskTimeInMinutes(it.value) ?: Int.MAX_VALUE }
+                .thenBy { it.index }
         )
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -298,9 +358,7 @@ fun EventListView(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            Button(onClick = { showDialog = true }) {
-                Text("Добавить")
-            }
+            Button(onClick = { openEditor(null) }) { Text("Добавить") }
         }
 
         if (eventsList.isEmpty()) {
@@ -308,19 +366,17 @@ fun EventListView(
                 text = "Задач нет. День свободен! 🎉",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                 textAlign = TextAlign.Center
             )
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                itemsIndexed(eventsList) { index, event ->
+                itemsIndexed(sortedEvents) { _, indexedEvent ->
+                    val originalIndex = indexedEvent.index
+                    val event = indexedEvent.value
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -328,18 +384,22 @@ fun EventListView(
                         )
                     ) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = event,
                                 style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).clickable { openEditor(originalIndex, event) }
                             )
-                            IconButton(onClick = { onDeleteEvent(index) }) {
+                            IconButton(onClick = { openEditor(originalIndex, event) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Редактировать задачу",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            IconButton(onClick = { onDeleteEvent(originalIndex) }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Удалить задачу",

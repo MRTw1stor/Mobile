@@ -154,11 +154,25 @@ fun HomeScreen(navController: NavController) {
         }
     )
     { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            when (selectedTab) {
-                0 -> CatalogListView(navController = navController)
-                1 -> CalendarScreen(navController = navController)
-                2 -> NotesScreen()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            // A centered max-width container prevents cards, text and forms from
+            // becoming excessively wide on large phones and foldable inner screens.
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 760.dp)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+            ) {
+                when (selectedTab) {
+                    0 -> CatalogListView(navController = navController)
+                    1 -> CalendarScreen(navController = navController)
+                    2 -> NotesScreen()
+                }
             }
         }
     }

@@ -43,7 +43,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
 
     /**
      * Добавление новой задачи
-     * Лямбда onResult возвращает true при успешном добавлении, false если достигнут лимит
+     * Лямбда onResult возвращает true при успешном добавлении и false при ошибке сохранения.
      */
 
     fun addEvent(eventText: String, onResult: (Boolean) -> Unit) {
@@ -59,6 +59,21 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                 loadEventsForSelectedDate()
             }
             onResult(isAdded)
+        }
+    }
+
+    /** Обновление существующей задачи для выбранной даты. */
+    fun updateEvent(index: Int, eventText: String, onResult: (Boolean) -> Unit) {
+        if (eventText.trim().isEmpty()) {
+            onResult(false)
+            return
+        }
+
+        viewModelScope.launch {
+            val dateKey = DateKeyFormatter.getIsoKey(_uiState.value.selectedDate)
+            val isUpdated = repository.updateEventForDate(dateKey, index, eventText.trim())
+            if (isUpdated) loadEventsForSelectedDate()
+            onResult(isUpdated)
         }
     }
 
